@@ -20,4 +20,31 @@ type User struct {
 	Profile     string         `json:"profile" gorm:"column:profile"`
 	RoleID      uint           `json:"role_id"`
 	Role        *Role          `json:"-" gorm:"foreignKey:RoleID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+
+	// เพิ่มความสัมพันธ์เพื่อให้ดึงข้อมูลได้ง่ายขึ้น
+	Favorites   []UserFavorite    `json:"favorites" gorm:"foreignKey:UserID"`
+	ReadHistory []UserReadHistory `json:"read_history" gorm:"foreignKey:UserID"`
+}
+
+// UserFavorite เก็บรายการที่ User กดถูกใจไว้
+type UserFavorite struct {
+	UserID     uint      `gorm:"primaryKey"`
+	ActivityID uint      `gorm:"primaryKey"`
+	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"`
+
+	// Relationships
+	User     User     `json:"-" gorm:"foreignKey:UserID"`
+	Activity Activity `json:"activity" gorm:"foreignKey:ActivityID"`
+}
+
+// UserReadHistory เก็บประวัติการเข้าอ่านและจำนวนครั้ง
+type UserReadHistory struct {
+	ID         uint      `json:"id" gorm:"primaryKey;autoIncrement"`
+	UserID     uint      `json:"user_id" gorm:"index"`
+	ActivityID uint      `json:"activity_id" gorm:"index"`
+	ReadCount  int       `json:"read_count" gorm:"default:1"`
+	UpdatedAt  time.Time `json:"last_read_at" gorm:"autoUpdateTime"`
+
+	// Relationships
+	Activity Activity `json:"activity" gorm:"foreignKey:ActivityID"`
 }

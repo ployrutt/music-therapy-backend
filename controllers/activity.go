@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 
 	"project-backend/models"
 
@@ -312,4 +313,103 @@ func GetActivityMasterCategories(db *gorm.DB) gin.HandlerFunc {
 
 	}
 
+}
+
+func ToggleFavorite(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// รับ userID จาก context ที่ middleware ตั้งค่าไว้
+		val, _ := c.Get("user_id")
+		userID := val.(uint)
+
+		// แปลง id จาก string เป็น uint เพื่อแก้ปัญหา parseID error
+		idStr := c.Param("id")
+		activityID, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid activity ID"})
+			return
+		}
+
+		var fav models.UserFavorite
+		// เช็คว่า User เคยถูกใจกิจกรรมนี้หรือยัง
+		result := db.Where("user_id = ? AND activity_id = ?", userID, uint(activityID)).First(&fav)
+
+		if result.Error == nil {
+			// ถ้าเจอข้อมูล = เคยถูกใจแล้ว -> ให้ลบออก (Unfavorite)
+			db.Delete(&fav)
+			c.JSON(http.StatusOK, gin.H{"status": "unfavorited", "message": "ลบออกจากรายการโปรดแล้ว"})
+		} else {
+			// ถ้าไม่เจอ = ยังไม่เคยถูกใจ -> ให้เพิ่ม (Favorite)
+			newFav := models.UserFavorite{
+				UserID:     userID,
+				ActivityID: uint(activityID),
+			}
+			if err := db.Create(&newFav).Error; err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusCreated, gin.H{"status": "favorited", "message": "เพิ่มในรายการโปรดแล้ว"})
+		}
+	}
+}
+
+// ListFavorites: ดึงรายการกิจกรรมที่กดถูกใจไว้ทั้งหมด (บรรทัดที่เพิ่มใหม่)
+func ListFavorites(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		val, _ := c.Get("user_id")
+		userID := val.(uint)
+
+		var favorites []models.UserFavorite
+		// ดึงข้อมูล Favorite พร้อมรายละเอียด Activity (Preload)
+		if err := db.Preload("Activity").Where("user_id = ?", userID).Find(&favorites).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, favorites)
+	}
+}
+
+// RecordReadHistory: บันทึกการเข้าอ่านและนับจำนวนครั้ง (บรรทัดที่เพิ่มใหม่)
+func RecordReadHistory(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		val, _ := c.Get("user_id")
+		userID := val.(uint)
+
+		idStr := c.Param("id")
+		activityID, _ := strconv.ParseUint(idStr, 10, 32)
+
+		var history models.UserReadHistory
+		result := db.Where("user_id = ? AND activity_id = ?", userID, uint(activityID)).First(&history)
+
+		if result.Error != nil {
+			// ยังไม่เคยอ่าน -> สร้าง Record ใหม่
+			newHistory := models.UserReadHistory{
+				UserID:     userID,
+				ActivityID: uint(activityID),
+				ReadCount:  1,
+			}
+			db.Create(&newHistory)
+		} else {
+			// เคยอ่านแล้ว -> อัปเดต ReadCount โดยใช้ gorm.Expr เพื่อความแม่นยำ
+			db.Model(&history).Update("read_count", gorm.Expr("read_count + ?", 1))
+		}
+		c.JSON(http.StatusOK, gin.H{"message": "บันทึกประวัติการอ่านเรียบร้อย"})
+	}
+}
+
+// ListReadHistory: ดึงประวัติการอ่านทั้งหมด (บรรทัดที่เพิ่มใหม่)
+func ListReadHistory(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		val, _ := c.Get("user_id")
+		userID := val.(uint)
+
+		var history []models.UserReadHistory
+		// เรียงตามเวลาที่อ่านล่าสุด (updated_at)
+		if err := db.Preload("Activity").Where("user_id = ?", userID).Order("updated_at DESC").Find(&history).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, history)
+	}
 }

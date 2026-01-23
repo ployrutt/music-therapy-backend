@@ -42,6 +42,14 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 		api.PUT("/profile", controllers.UpdateProfile(db))
 		api.DELETE("/profile/image", controllers.DeleteProfileImage(db))
 
+		// --- เพิ่มใหม่: ระบบ Favorite (บรรทัดที่เพิ่ม) ---
+		api.POST("/activities/:id/favorite", controllers.ToggleFavorite(db)) // เพิ่มหรือลบรายการโปรด
+		api.GET("/favorites", controllers.ListFavorites(db))                 // ดูรายการโปรดทั้งหมดของตนเอง
+
+		// --- เพิ่มใหม่: ระบบ Read History (บรรทัดที่เพิ่ม) ---
+		api.POST("/activities/:id/read", controllers.RecordReadHistory(db)) // บันทึกการเข้าอ่านกิจกรรม
+		api.GET("/read-history", controllers.ListReadHistory(db))
+
 	}
 
 	admin := r.Group("/admin", middleware.AuthMiddleware("admin"))
