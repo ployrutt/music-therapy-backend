@@ -388,7 +388,7 @@ func RecordReadHistory(db *gorm.DB) gin.HandlerFunc {
 		result := db.Where("user_id = ? AND activity_id = ?", userID, uint(activityID)).First(&history)
 
 		if result.Error != nil {
-			// ยังไม่เคยอ่าน -> สร้าง Record ใหม่
+
 			newHistory := models.UserReadHistory{
 				UserID:     userID,
 				ActivityID: uint(activityID),
@@ -396,26 +396,85 @@ func RecordReadHistory(db *gorm.DB) gin.HandlerFunc {
 			}
 			db.Create(&newHistory)
 		} else {
-			// เคยอ่านแล้ว -> อัปเดต ReadCount โดยใช้ gorm.Expr เพื่อความแม่นยำ
+
 			db.Model(&history).Update("read_count", gorm.Expr("read_count + ?", 1))
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "บันทึกประวัติการอ่านเรียบร้อย"})
 	}
 }
-
-// ListReadHistory: ดึงประวัติการอ่านทั้งหมด (บรรทัดที่เพิ่มใหม่)
 func ListReadHistory(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		val, _ := c.Get("user_id")
 		userID := val.(uint)
 
 		var history []models.UserReadHistory
-		// เรียงตามเวลาที่อ่านล่าสุด (updated_at)
-		if err := db.Preload("Activity").Where("user_id = ?", userID).Order("updated_at DESC").Find(&history).Error; err != nil {
+
+		// ใช้ Preload พร้อมฟังก์ชัน Anonymous เพื่อระบุคอลัมน์ที่ต้องการ
+		err := db.Preload("Activity", func(db *gorm.DB) *gorm.DB {
+			// เลือกเฉพาะ id และ title เท่านั้น
+			return db.Select("id", "title")
+		}).Where("user_id = ?", userID).
+			Order("updated_at DESC").
+			Find(&history).Error
+
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
 		c.JSON(http.StatusOK, history)
+	}
+}
+
+// SearchAndFilterActivities: ค้นหาและกรองกิจกรรมตามเงื่อนไข
+func SearchAndFilterActivities(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var activities []models.Activity
+		query := db.Model(&models.Activity{}).Preload("SubGoals").Preload("SubCategories")
+
+		// 1. ค้นหาจากชื่อ (Search by Title)
+		if title := c.Query("title"); title != "" {
+			query = query.Where("title LIKE ?", "%"+title+"%")
+		}
+
+		// 2. กรองตามเป้าหมาย (Filter by SubGoal ID)
+		if subGoalID := c.Query("sub_goal_id"); subGoalID != "" {
+			query = query.Joins("JOIN activity_sub_goal_assoc ON activity_sub_goal_assoc.activity_id = activities.id").
+				Where("activity_sub_goal_assoc.activity_sub_goal_id = ?", subGoalID)
+		}
+
+		// 3. กรองตามหมวดหมู่ (Filter by SubCategory ID)
+		if subCatID := c.Query("sub_category_id"); subCatID != "" {
+			query = query.Joins("JOIN activity_sub_category_assoc ON activity_sub_category_assoc.activity_id = activities.id").
+				Where("activity_sub_category_assoc.activity_sub_category_id = ?", subCatID)
+		}
+
+		if err := query.Distinct().Find(&activities).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, activities)
+	}
+}
+
+// GetActivityStats: แสดงจำนวน Fav และ Read ของแต่ละกิจกรรม
+func GetActivityStats(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		id := c.Param("id")
+
+		var favCount int64
+		var readTotal int64
+
+		// นับจำนวนคนที่กด Favorite
+		db.Model(&models.UserFavorite{}).Where("activity_id = ?", id).Count(&favCount)
+
+		// รวมจำนวนครั้งที่ถูกอ่านทั้งหมด (Sum ReadCount)
+		db.Model(&models.UserReadHistory{}).Where("activity_id = ?", id).Select("COALESCE(sum(read_count), 0)").Row().Scan(&readTotal)
+
+		c.JSON(http.StatusOK, gin.H{
+			"activity_id":    id,
+			"favorite_count": favCount,
+			"total_reads":    readTotal,
+		})
 	}
 }
