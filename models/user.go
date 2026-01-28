@@ -28,13 +28,15 @@ type User struct {
 
 // UserFavorite เก็บรายการที่ User กดถูกใจไว้
 type UserFavorite struct {
-	UserID     uint      `gorm:"primaryKey"`
-	ActivityID uint      `gorm:"primaryKey"`
+	// ระบุชื่อ column ให้ตรงกับใน DB และระบุว่าเป็น primaryKey
+	UserID     uint      `json:"user_id" gorm:"column:user_id;primaryKey"`
+	ActivityID uint      `json:"activity_id" gorm:"column:activity_id;primaryKey"`
 	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"`
 
 	// Relationships
-	User     User     `json:"-" gorm:"foreignKey:UserID"`
-	Activity Activity `json:"activity" gorm:"foreignKey:ActivityID"`
+	// เพิ่ม references:ID เพื่อบอกว่า ActivityID นี้ไปจอยกับ ID ของตาราง Activity
+	User     User     `json:"-" gorm:"foreignKey:UserID;references:ID"`
+	Activity Activity `json:"activity" gorm:"foreignKey:ActivityID;references:ID"`
 }
 
 // UserReadHistory เก็บประวัติการเข้าอ่านและจำนวนครั้ง

@@ -359,8 +359,14 @@ func ListFavorites(db *gorm.DB) gin.HandlerFunc {
 		userID := val.(uint)
 
 		var favorites []models.UserFavorite
-		// ดึงข้อมูล Favorite พร้อมรายละเอียด Activity (Preload)
-		if err := db.Preload("Activity").Where("user_id = ?", userID).Find(&favorites).Error; err != nil {
+
+		// ใช้ Select เพื่อเลือกเฉพาะคอลัมน์ที่จำเป็นในตาราง UserFavorite
+		// และใช้ Preload แบบกำหนดเงื่อนไขเพื่อเลือกเฉพาะ ID และ Title จากตาราง Activity
+		err := db.Preload("Activity", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "title") // ดึงมาแค่ id และ title (ตัด cover_image ออก)
+		}).Where("user_id = ?", userID).Find(&favorites).Error
+
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
