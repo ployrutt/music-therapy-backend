@@ -1,8 +1,10 @@
 package router
 
 import (
+	"os"
 	"project-backend/controllers"
 	"project-backend/middleware"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -14,7 +16,7 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:4200"},
+		AllowOrigins:     getAllowedOrigins(),
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		AllowCredentials: true,
@@ -64,4 +66,11 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	}
 
 	return r
+}
+
+func getAllowedOrigins() []string {
+	if origins := os.Getenv("CORS_ORIGINS"); origins != "" {
+		return strings.Split(origins, ",")
+	}
+	return []string{"http://localhost:4200"}
 }

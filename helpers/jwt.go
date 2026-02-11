@@ -1,12 +1,20 @@
 package helpers
 
 import (
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte("YOUR_ULTRA_SECRET_KEY_CHANGE_ME")
+var jwtSecret = []byte(getJWTSecret())
+
+func getJWTSecret() string {
+	if secret := os.Getenv("JWT_SECRET"); secret != "" {
+		return secret
+	}
+	return "YOUR_ULTRA_SECRET_KEY_CHANGE_ME"
+}
 
 type Claims struct {
 	UserID   uint   `json:"user_id"`
