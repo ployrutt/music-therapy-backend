@@ -61,6 +61,9 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 		admin.POST("/activities", controllers.CreateActivity(db))
 		admin.PUT("/activities/:id", controllers.UpdateActivity(db))
 		admin.DELETE("/activities/:id", controllers.DeleteActivity(db))
+
+		admin.POST("/roles", controllers.AdminCreateUser(db))
+		admin.DELETE("/roles/:id", controllers.AdminDeleteUser(db))
 	}
 
 	return r
