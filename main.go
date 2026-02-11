@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"project-backend/config"
 	"project-backend/db"
@@ -9,6 +10,7 @@ import (
 	"project-backend/router"
 	"project-backend/seeds"
 
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -22,6 +24,11 @@ func hashPassword(password string) (string, error) {
 }
 
 func main() {
+	// โหลด .env file (ถ้ามี) - ใน Docker จะใช้ env vars จาก Dokploy แทน
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using system environment variables")
+	}
+
 	cfg := config.GetDBConfig()
 
 	// 1. เชื่อมต่อ Database
@@ -105,30 +112,30 @@ func runDatabaseSeeds(gormDB *gorm.DB) {
 		log.Printf("Error seeding MainCategories: %v", err)
 	}
 
-	// var adminCount int64
-	// gormDB.Model(&models.User{}).Where("email = ?", "Admin@example.com").Count(&adminCount)
+	var adminCount int64
+	gormDB.Model(&models.User{}).Where("email = ?", "Admin@example.com").Count(&adminCount)
 
-	// if adminCount == 0 {
+	if adminCount == 0 {
 
-	// 	hashedPass, _ := hashPassword("password")
-	// 	adminUser := models.User{
-	// 		FirstName:   "Admin",
-	// 		LastName:    "01",
-	// 		DateOfBirth: time.Date(1995, time.March, 1, 0, 0, 0, 0, time.UTC),
-	// 		Email:       "Admin@example.com",
-	// 		Password:    hashedPass,
-	// 		PhoneNumber: "0812544643",
-	// 		Profile:     "image",
-	// 		RoleID:      1,
-	// 	}
-	// 	if err := gormDB.Create(&adminUser).Error; err != nil {
-	// 		log.Printf("Could not create initial Admin: %v", err)
-	// 	} else {
-	// 		log.Println("Admin User created successfully.")
-	// 	}
-	// } else {
-	// 	log.Println("Admin User already exists, skipping...")
-	// }
+		hashedPass, _ := hashPassword("password")
+		adminUser := models.User{
+			FirstName:   "Admin",
+			LastName:    "01",
+			DateOfBirth: time.Date(1995, time.March, 1, 0, 0, 0, 0, time.UTC),
+			Email:       "Admin@example.com",
+			Password:    hashedPass,
+			PhoneNumber: "0812544643",
+			Profile:     "image",
+			RoleID:      1,
+		}
+		if err := gormDB.Create(&adminUser).Error; err != nil {
+			log.Printf("Could not create initial Admin: %v", err)
+		} else {
+			log.Println("Admin User created successfully.")
+		}
+	} else {
+		log.Println("Admin User already exists, skipping...")
+	}
 
 	log.Println("Seeding process completed.")
 }

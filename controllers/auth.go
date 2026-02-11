@@ -77,7 +77,7 @@ func Login(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 		var user models.User
-		if err := db.Where("email = ?", input.Email).Preload("Role").First(&user).Error; err != nil {
+		if err := db.Where("LOWER(email) = LOWER(?)", input.Email).Preload("Role").First(&user).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 				return
