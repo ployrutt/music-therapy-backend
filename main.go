@@ -10,6 +10,7 @@ import (
 	"project-backend/router"
 	"project-backend/seeds"
 
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -23,6 +24,11 @@ func hashPassword(password string) (string, error) {
 }
 
 func main() {
+	// โหลด .env file (ถ้ามี) - ใน Docker จะใช้ env vars จาก Dokploy แทน
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using system environment variables")
+	}
+
 	cfg := config.GetDBConfig()
 
 	// 1. เชื่อมต่อ Database
