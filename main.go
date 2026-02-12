@@ -189,8 +189,8 @@ func main() {
 		&models.ActivitySubGoal{},
 		&models.ActivityMainCategory{},
 		&models.ActivitySubCategory{},
-		// &models.UserFavorite{},
-		// &models.UserReadHistory{},
+		&models.UserFavorite{},
+		&models.UserReadHistory{},
 	)
 
 	if err != nil {
