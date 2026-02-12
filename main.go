@@ -53,13 +53,13 @@ func main() {
 	}
 
 	// 2. ล้างตารางเดิมทิ้ง (สำคัญมากสำหรับ PostgreSQL เพื่อไม่ให้ติด FK Error)
-	// log.Println("Resetting database tables...")
-	// gormDB.Exec(`DROP TABLE IF EXISTS
-	// 	role_permissions, role_permission_groups,
-	// 	activity_selected_sub_goals, activity_selected_sub_categories,
-	// 	activity_sub_goals, activity_sub_categories,
-	// 	activity_goals, activity_main_categories,
-	// 	activities, users, permissions, permission_groups, roles CASCADE`)
+	log.Println("Resetting database tables...")
+	gormDB.Exec(`DROP TABLE IF EXISTS
+		role_permissions, role_permission_groups,
+		activity_selected_sub_goals, activity_selected_sub_categories,
+		activity_sub_goals, activity_sub_categories,
+		activity_goals, activity_main_categories,
+		activities, users, permissions, permission_groups, roles CASCADE`)
 
 	// 3. สร้างตารางใหม่ทั้งหมด
 	log.Println("Migrating database structure...")
@@ -114,7 +114,7 @@ func runDatabaseSeeds(gormDB *gorm.DB) {
 
 	var adminCount int64
 
-	gormDB.Model(&models.User{}).Where("email = ?", "Admin@example.com").Count(&adminCount)
+	gormDB.Model(&models.User{}).Where("email = ?", "Test@example.com").Count(&adminCount)
 
 	if adminCount == 0 {
 
@@ -122,8 +122,8 @@ func runDatabaseSeeds(gormDB *gorm.DB) {
 		adminUser := models.User{
 			FirstName:   "test",
 			LastName:    "admin",
-			DateOfBirth: time.Date(1998, time.March, 1, 0, 0, 0, 0, time.UTC),
-			Email:       "Admin@example.com",
+			DateOfBirth: time.Date(1999, time.March, 1, 0, 0, 0, 0, time.UTC),
+			Email:       "TestAdmin@example.com",
 			Password:    hashedPass,
 			PhoneNumber: "0123456789",
 			Profile:     "image",
