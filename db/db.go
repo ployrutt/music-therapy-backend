@@ -1,3 +1,45 @@
+// package db
+
+// import (
+// 	"fmt"
+// 	"log"
+// 	"os"
+// 	"time"
+
+// 	"project-backend/config"
+
+// 	"gorm.io/driver/postgres"
+// 	"gorm.io/gorm"
+// 	"gorm.io/gorm/logger"
+// )
+
+// func InitDB(cfg *config.DBConfig, models ...interface{}) (*gorm.DB, error) {
+
+// 	newLogger := logger.New(
+// 		log.New(os.Stdout, "\r\n", log.LstdFlags),
+// 		logger.Config{
+// 			SlowThreshold: time.Second,
+// 			LogLevel:      logger.Info,
+// 			Colorful:      true,
+// 		},
+// 	)
+
+// 	db, err := gorm.Open(postgres.Open(cfg.DSN()), &gorm.Config{
+// 		Logger: newLogger,
+// 	})
+
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to connect to database: %w", err)
+// 	}
+
+// 	err = db.AutoMigrate(models...)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to auto migrate tables: %w", err)
+// 	}
+
+//		fmt.Println("Database migration completed successfully!")
+//		return db, nil
+//	}
 package db
 
 import (
@@ -14,12 +56,17 @@ import (
 )
 
 func InitDB(cfg *config.DBConfig, models ...interface{}) (*gorm.DB, error) {
+	// ตั้งค่า Log Level ตาม Mode ของแอป
+	logLevel := logger.Info
+	if os.Getenv("GIN_MODE") == "release" {
+		logLevel = logger.Error // บน Production ให้โชว์เฉพาะ Error เพื่อประหยัดพื้นที่ Log
+	}
 
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
 		logger.Config{
 			SlowThreshold: time.Second,
-			LogLevel:      logger.Info,
+			LogLevel:      logLevel,
 			Colorful:      true,
 		},
 	)
@@ -32,11 +79,11 @@ func InitDB(cfg *config.DBConfig, models ...interface{}) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
+	// สร้างตารางอัตโนมัติ
 	err = db.AutoMigrate(models...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to auto migrate tables: %w", err)
 	}
 
-	fmt.Println("Database migration completed successfully!")
 	return db, nil
 }
