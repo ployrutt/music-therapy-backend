@@ -114,16 +114,16 @@ func runDatabaseSeeds(gormDB *gorm.DB) {
 
 	var adminCount int64
 
-	gormDB.Model(&models.User{}).Where("email = ?", "Therapist@example.com").Count(&adminCount)
+	gormDB.Model(&models.User{}).Where("email = ?", "admin@example.com").Count(&adminCount)
 
 	if adminCount == 0 {
 
 		hashedPass, _ := hashPassword("password1234")
 		adminUser := models.User{
-			FirstName:   "Music",
-			LastName:    "Therapist",
-			DateOfBirth: time.Date(1997, time.March, 1, 0, 0, 0, 0, time.UTC),
-			Email:       "Therapist@example.com",
+			FirstName:   "test",
+			LastName:    "admin",
+			DateOfBirth: time.Date(1998, time.March, 1, 0, 0, 0, 0, time.UTC),
+			Email:       "admin@example.com",
 			Password:    hashedPass,
 			PhoneNumber: "0123456789",
 			Profile:     "image",
