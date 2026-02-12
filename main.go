@@ -180,17 +180,17 @@ func main() {
 	// เราจะไม่ใช้ DROP TABLE ในเวอร์ชันนี้เพื่อป้องกันข้อมูลบน Dokploy หาย
 	gormDB, err := db.InitDB(
 		cfg,
-		&models.Role{},
+		&models.Role{}, // 1. มาก่อนเพื่อน
 		&models.PermissionGroup{},
 		&models.Permission{},
-		&models.User{},
-		&models.Activity{}, // ต้องอยู่ก่อน Favorite และ ReadHistory
+		&models.User{},     // 2. มาก่อน Favorite/ReadHistory
+		&models.Activity{}, // 3. มาก่อน Favorite/ReadHistory
 		&models.ActivityGoal{},
 		&models.ActivitySubGoal{},
 		&models.ActivityMainCategory{},
 		&models.ActivitySubCategory{},
 
-		// เปิดใช้งาน 2 บรรทัดนี้
+		// 4. สองตัวนี้อยู่ล่างสุดเสมอ เพราะต้องรอ User และ Activity
 		&models.UserFavorite{},
 		&models.UserReadHistory{},
 	)
