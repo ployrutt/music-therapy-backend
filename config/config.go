@@ -19,8 +19,8 @@ func GetDBConfig() *DBConfig {
 		Port:     getEnv("DB_PORT", "5432"),
 		User:     getEnv("DB_USER", "postgres"),
 		Password: getEnv("DB_PASSWORD", ""),
-		DBName:   getEnv("DB_NAME", "project-backend "),
-		// DBName:   getEnv("DB_NAME", "project-backend"),
+		// DBName:   getEnv("DB_NAME", "postgres"),
+		DBName: getEnv("DB_NAME", "project-backend"),
 	}
 }
 
