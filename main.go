@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"project-backend/config"
 	"project-backend/db"
@@ -111,31 +112,31 @@ func runDatabaseSeeds(gormDB *gorm.DB) {
 		log.Printf("Error seeding MainCategories: %v", err)
 	}
 
-	// var adminCount int64
+	var adminCount int64
 
-	// gormDB.Model(&models.User{}).Where("email = ?", "admin@example.com").Count(&adminCount)
+	gormDB.Model(&models.User{}).Where("email = ?", "Admin@example.com").Count(&adminCount)
 
-	// if adminCount == 0 {
+	if adminCount == 0 {
 
-	// 	hashedPass, _ := hashPassword("password1234")
-	// 	adminUser := models.User{
-	// 		FirstName:   "test",
-	// 		LastName:    "admin",
-	// 		DateOfBirth: time.Date(1998, time.March, 1, 0, 0, 0, 0, time.UTC),
-	// 		Email:       "admin@example.com",
-	// 		Password:    hashedPass,
-	// 		PhoneNumber: "0123456789",
-	// 		Profile:     "image",
-	// 		RoleID:      1,
-	// 	}
-	// 	if err := gormDB.Create(&adminUser).Error; err != nil {
-	// 		log.Printf("Could not create initial Admin: %v", err)
-	// 	} else {
-	// 		log.Println("Admin User created successfully.")
-	// 	}
-	// } else {
-	// 	log.Println("Admin User already exists, skipping...")
-	// }
+		hashedPass, _ := hashPassword("12052546")
+		adminUser := models.User{
+			FirstName:   "test",
+			LastName:    "admin",
+			DateOfBirth: time.Date(1998, time.March, 1, 0, 0, 0, 0, time.UTC),
+			Email:       "Admin@example.com",
+			Password:    hashedPass,
+			PhoneNumber: "0123456789",
+			Profile:     "image",
+			RoleID:      1,
+		}
+		if err := gormDB.Create(&adminUser).Error; err != nil {
+			log.Printf("Could not create initial Admin: %v", err)
+		} else {
+			log.Println("Admin User created successfully.")
+		}
+	} else {
+		log.Println("Admin User already exists, skipping...")
+	}
 
 	log.Println("Seeding process completed.")
 }
