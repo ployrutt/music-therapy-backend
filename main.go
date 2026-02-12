@@ -120,8 +120,8 @@ func runDatabaseSeeds(gormDB *gorm.DB) {
 
 		hashedPass, _ := hashPassword("password1234")
 		adminUser := models.User{
-			FirstName:   "Admin",
-			LastName:    "01",
+			FirstName:   "Music",
+			LastName:    "Therapist",
 			DateOfBirth: time.Date(1997, time.March, 1, 0, 0, 0, 0, time.UTC),
 			Email:       "Therapist@example.com",
 			Password:    hashedPass,
