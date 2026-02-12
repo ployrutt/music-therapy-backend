@@ -191,8 +191,8 @@ func main() {
 		&models.ActivitySubCategory{},
 
 		// เปิดใช้งาน 2 บรรทัดนี้
-		// &models.UserFavorite{},
-		// &models.UserReadHistory{},
+		&models.UserFavorite{},
+		&models.UserReadHistory{},
 	)
 
 	if err != nil {
