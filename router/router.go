@@ -15,6 +15,7 @@ import (
 func SetupRouter(db *gorm.DB) *gin.Engine {
 	r := gin.Default()
 
+	// แก้ไขส่วนนี้เพื่อให้ดึงค่า CORS_ORIGINS ที่เราตั้งใน Dokploy มาใช้
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     getAllowedOrigins(),
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
