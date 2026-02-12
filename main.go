@@ -187,14 +187,14 @@ func main() {
 		&models.PermissionGroup{},
 		&models.Permission{},
 
-		&models.ActivityGoal{},
-		&models.ActivitySubGoal{},
-		&models.ActivityMainCategory{},
-		&models.ActivitySubCategory{},
+		// &models.ActivityGoal{},
+		// &models.ActivitySubGoal{},
+		// &models.ActivityMainCategory{},
+		// &models.ActivitySubCategory{},
 
-		// 4. สองตัวนี้อยู่ล่างสุดเสมอ เพราะต้องรอ User และ Activity
-		&models.UserFavorite{},
-		&models.UserReadHistory{},
+		// // 4. สองตัวนี้อยู่ล่างสุดเสมอ เพราะต้องรอ User และ Activity
+		// &models.UserFavorite{},
+		// &models.UserReadHistory{},
 	)
 
 	if err != nil {
