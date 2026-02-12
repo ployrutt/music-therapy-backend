@@ -114,7 +114,7 @@ func runDatabaseSeeds(gormDB *gorm.DB) {
 
 	var adminCount int64
 
-	gormDB.Model(&models.User{}).Where("email = ?", "Admin@example.com").Count(&adminCount)
+	gormDB.Model(&models.User{}).Where("email = ?", "Therapist@example.com").Count(&adminCount)
 
 	if adminCount == 0 {
 
