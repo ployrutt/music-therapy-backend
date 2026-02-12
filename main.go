@@ -181,18 +181,14 @@ func main() {
 	gormDB, err := db.InitDB(
 		cfg,
 		&models.Role{},
-		&models.User{},
-		&models.Activity{},
-		&models.Role{}, // 1. มาก่อนเพื่อน
 		&models.PermissionGroup{},
 		&models.Permission{},
-
+		&models.User{},
+		&models.Activity{},
 		&models.ActivityGoal{},
 		&models.ActivitySubGoal{},
 		&models.ActivityMainCategory{},
 		&models.ActivitySubCategory{},
-
-		// // 4. สองตัวนี้อยู่ล่างสุดเสมอ เพราะต้องรอ User และ Activity
 		// &models.UserFavorite{},
 		// &models.UserReadHistory{},
 	)
@@ -241,9 +237,8 @@ func runDatabaseSeeds(gormDB *gorm.DB) {
 
 	// --- ตรวจสอบและสร้าง Admin User ---
 	var adminCount int64
-	targetEmail := "TestAdmin@example.com" // ใช้อีเมลนี้เป็นหลัก
-
-	// แก้ไข: เช็คจาก targetEmail ที่เราจะใช้สร้างจริงๆ
+	// เช็คจากอีเมลที่เราจะใช้สร้างจริง
+	targetEmail := "TestAdmin@example.com"
 	gormDB.Model(&models.User{}).Where("email = ?", targetEmail).Count(&adminCount)
 
 	if adminCount == 0 {
@@ -252,11 +247,11 @@ func runDatabaseSeeds(gormDB *gorm.DB) {
 			FirstName:   "test",
 			LastName:    "admin",
 			DateOfBirth: time.Date(1999, time.March, 1, 0, 0, 0, 0, time.UTC),
-			Email:       targetEmail, // ใช้ค่าเดียวกัน
+			Email:       targetEmail,
 			Password:    hashedPass,
 			PhoneNumber: "0123456789",
 			Profile:     "image",
-			RoleID:      1,
+			RoleID:      1, // มั่นใจว่า Role ID 1 คือ Admin
 		}
 		if err := gormDB.Create(&adminUser).Error; err != nil {
 			log.Printf("Could not create initial Admin: %v", err)
