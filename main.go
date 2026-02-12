@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"project-backend/config"
 	"project-backend/db"
@@ -52,13 +53,13 @@ func main() {
 	}
 
 	// 2. ล้างตารางเดิมทิ้ง (สำคัญมากสำหรับ PostgreSQL เพื่อไม่ให้ติด FK Error)
-	// log.Println("Resetting database tables...")
-	// gormDB.Exec(`DROP TABLE IF EXISTS
-	// 	role_permissions, role_permission_groups,
-	// 	activity_selected_sub_goals, activity_selected_sub_categories,
-	// 	activity_sub_goals, activity_sub_categories,
-	// 	activity_goals, activity_main_categories,
-	// 	activities, users, permissions, permission_groups, roles CASCADE`)
+	log.Println("Resetting database tables...")
+	gormDB.Exec(`DROP TABLE IF EXISTS
+		role_permissions, role_permission_groups,
+		activity_selected_sub_goals, activity_selected_sub_categories,
+		activity_sub_goals, activity_sub_categories,
+		activity_goals, activity_main_categories,
+		activities, users, permissions, permission_groups, roles CASCADE`)
 
 	// 3. สร้างตารางใหม่ทั้งหมด
 	log.Println("Migrating database structure...")
@@ -111,31 +112,31 @@ func runDatabaseSeeds(gormDB *gorm.DB) {
 		log.Printf("Error seeding MainCategories: %v", err)
 	}
 
-	// var adminCount int64
+	var adminCount int64
 
-	// gormDB.Model(&models.User{}).Where("email = ?", "Therapist@example.com").Count(&adminCount)
+	gormDB.Model(&models.User{}).Where("email = ?", "Therapist@example.com").Count(&adminCount)
 
-	// if adminCount == 0 {
+	if adminCount == 0 {
 
-	// 	hashedPass, _ := hashPassword("password1234")
-	// 	adminUser := models.User{
-	// 		FirstName:   "Music",
-	// 		LastName:    "Therapist",
-	// 		DateOfBirth: time.Date(1997, time.March, 1, 0, 0, 0, 0, time.UTC),
-	// 		Email:       "Therapist@example.com",
-	// 		Password:    hashedPass,
-	// 		PhoneNumber: "0123456789",
-	// 		Profile:     "image",
-	// 		RoleID:      1,
-	// 	}
-	// 	if err := gormDB.Create(&adminUser).Error; err != nil {
-	// 		log.Printf("Could not create initial Admin: %v", err)
-	// 	} else {
-	// 		log.Println("Admin User created successfully.")
-	// 	}
-	// } else {
-	// 	log.Println("Admin User already exists, skipping...")
-	// }
+		hashedPass, _ := hashPassword("password1234")
+		adminUser := models.User{
+			FirstName:   "Music",
+			LastName:    "Therapist",
+			DateOfBirth: time.Date(1997, time.March, 1, 0, 0, 0, 0, time.UTC),
+			Email:       "Therapist@example.com",
+			Password:    hashedPass,
+			PhoneNumber: "0123456789",
+			Profile:     "image",
+			RoleID:      1,
+		}
+		if err := gormDB.Create(&adminUser).Error; err != nil {
+			log.Printf("Could not create initial Admin: %v", err)
+		} else {
+			log.Println("Admin User created successfully.")
+		}
+	} else {
+		log.Println("Admin User already exists, skipping...")
+	}
 
 	log.Println("Seeding process completed.")
 }
