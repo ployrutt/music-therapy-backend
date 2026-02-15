@@ -2,7 +2,6 @@ package models
 
 import "time"
 
-// --- ตารางกิจกรรมหลัก ---
 type Activity struct {
 	ID                 uint      `json:"activity_id" gorm:"primaryKey;autoIncrement"`
 	Title              string    `json:"title" gorm:"type:text;not null"`
@@ -20,15 +19,12 @@ type Activity struct {
 	QR2                string    `json:"qr_2" gorm:"type:text"`
 	AdminID            uint      `json:"admin_id" gorm:"not null"`
 
-	// เชื่อม Many-to-Many ไปยังเป้าหมายและหมวดหมู่ (ใช้ตารางกลาง)
 	SubGoals      []ActivitySubGoal     `json:"selected_sub_goals" gorm:"many2many:activity_selected_sub_goals;"`
 	SubCategories []ActivitySubCategory `json:"selected_sub_categories" gorm:"many2many:activity_selected_sub_categories;"`
 }
 
-// --- ตาราง Master Data (ID จะคงที่ตาม Seed) ---
-
 type ActivityGoal struct {
-	ID       uint              `json:"goal_id" gorm:"primaryKey"` // ไม่ใส่ autoIncrement เพื่อให้ Fix ID จาก Seed ได้
+	ID       uint              `json:"goal_id" gorm:"primaryKey"`
 	GoalName string            `json:"goal_name" gorm:"type:text;not null"`
 	SubGoals []ActivitySubGoal `json:"sub_goals" gorm:"foreignKey:GoalID"`
 }
@@ -42,13 +38,13 @@ type ActivitySubGoal struct {
 type ActivityMainCategory struct {
 	ID           uint   `json:"category_id" gorm:"primaryKey"`
 	CategoryName string `json:"category_name" gorm:"type:text;not null"`
-	// บอก GORM ว่าตัวลูกใช้ Column ชื่อ category_id นะ
+
 	SubCategories []ActivitySubCategory `json:"sub_categories" gorm:"foreignKey:CategoryID"`
 }
 
 type ActivitySubCategory struct {
 	ID uint `json:"sub_category_id" gorm:"primaryKey"`
-	// บังคับชื่อ Column ใน DB ให้เป็น category_id ตรงๆ
+
 	CategoryID      uint   `json:"category_id" gorm:"column:category_id"`
 	SubCategoryName string `json:"sub_category_name" gorm:"type:text;not null"`
 }

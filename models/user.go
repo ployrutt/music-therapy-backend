@@ -21,25 +21,19 @@ type User struct {
 	RoleID      uint           `json:"role_id"`
 	Role        *Role          `json:"-" gorm:"foreignKey:RoleID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 
-	// เพิ่มความสัมพันธ์เพื่อให้ดึงข้อมูลได้ง่ายขึ้น
 	Favorites   []UserFavorite    `json:"favorites" gorm:"foreignKey:UserID"`
 	ReadHistory []UserReadHistory `json:"read_history" gorm:"foreignKey:UserID"`
 }
 
-// UserFavorite เก็บรายการที่ User กดถูกใจไว้
 type UserFavorite struct {
-	// ระบุชื่อ column ให้ตรงกับใน DB และระบุว่าเป็น primaryKey
 	UserID     uint      `json:"user_id" gorm:"column:user_id;primaryKey"`
 	ActivityID uint      `json:"activity_id" gorm:"column:activity_id;primaryKey"`
 	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"`
 
-	// Relationships
-	// เพิ่ม references:ID เพื่อบอกว่า ActivityID นี้ไปจอยกับ ID ของตาราง Activity
 	User     User     `json:"-" gorm:"foreignKey:UserID;references:ID"`
 	Activity Activity `json:"activity" gorm:"foreignKey:ActivityID;references:ID"`
 }
 
-// UserReadHistory เก็บประวัติการเข้าอ่านและจำนวนครั้ง
 type UserReadHistory struct {
 	ID         uint      `json:"id" gorm:"primaryKey;autoIncrement"`
 	UserID     uint      `json:"user_id" gorm:"index"`
@@ -47,6 +41,5 @@ type UserReadHistory struct {
 	ReadCount  int       `json:"read_count" gorm:"default:1"`
 	UpdatedAt  time.Time `json:"last_read_at" gorm:"autoUpdateTime"`
 
-	// Relationships
 	Activity Activity `json:"activity" gorm:"foreignKey:ActivityID"`
 }

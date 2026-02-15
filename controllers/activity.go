@@ -317,11 +317,10 @@ func GetActivityMasterCategories(db *gorm.DB) gin.HandlerFunc {
 
 func ToggleFavorite(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// รับ userID จาก context ที่ middleware ตั้งค่าไว้
+
 		val, _ := c.Get("user_id")
 		userID := val.(uint)
 
-		// แปลง id จาก string เป็น uint เพื่อแก้ปัญหา parseID error
 		idStr := c.Param("id")
 		activityID, err := strconv.ParseUint(idStr, 10, 32)
 		if err != nil {
@@ -330,15 +329,15 @@ func ToggleFavorite(db *gorm.DB) gin.HandlerFunc {
 		}
 
 		var fav models.UserFavorite
-		// เช็คว่า User เคยถูกใจกิจกรรมนี้หรือยัง
+
 		result := db.Where("user_id = ? AND activity_id = ?", userID, uint(activityID)).First(&fav)
 
 		if result.Error == nil {
-			// ถ้าเจอข้อมูล = เคยถูกใจแล้ว -> ให้ลบออก (Unfavorite)
+
 			db.Delete(&fav)
 			c.JSON(http.StatusOK, gin.H{"status": "unfavorited", "message": "ลบออกจากรายการโปรดแล้ว"})
 		} else {
-			// ถ้าไม่เจอ = ยังไม่เคยถูกใจ -> ให้เพิ่ม (Favorite)
+
 			newFav := models.UserFavorite{
 				UserID:     userID,
 				ActivityID: uint(activityID),
@@ -352,7 +351,6 @@ func ToggleFavorite(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// ListFavorites: ดึงรายการกิจกรรมที่กดถูกใจไว้ทั้งหมด (บรรทัดที่เพิ่มใหม่)
 func ListFavorites(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		val, _ := c.Get("user_id")
@@ -360,10 +358,8 @@ func ListFavorites(db *gorm.DB) gin.HandlerFunc {
 
 		var favorites []models.UserFavorite
 
-		// ใช้ Select เพื่อเลือกเฉพาะคอลัมน์ที่จำเป็นในตาราง UserFavorite
-		// และใช้ Preload แบบกำหนดเงื่อนไขเพื่อเลือกเฉพาะ ID และ Title จากตาราง Activity
 		err := db.Preload("Activity", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "title") // ดึงมาแค่ id และ title (ตัด cover_image ออก)
+			return db.Select("id", "title")
 		}).Where("user_id = ?", userID).Find(&favorites).Error
 
 		if err != nil {
@@ -375,7 +371,6 @@ func ListFavorites(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// RecordReadHistory: บันทึกการเข้าอ่านและนับจำนวนครั้ง (บรรทัดที่เพิ่มใหม่)
 func RecordReadHistory(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		val, _ := c.Get("user_id")
@@ -409,9 +404,8 @@ func ListReadHistory(db *gorm.DB) gin.HandlerFunc {
 
 		var history []models.UserReadHistory
 
-		// ใช้ Preload พร้อมฟังก์ชัน Anonymous เพื่อระบุคอลัมน์ที่ต้องการ
 		err := db.Preload("Activity", func(db *gorm.DB) *gorm.DB {
-			// เลือกเฉพาะ id และ title เท่านั้น
+
 			return db.Select("id", "title")
 		}).Where("user_id = ?", userID).
 			Order("updated_at DESC").
@@ -426,24 +420,20 @@ func ListReadHistory(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// SearchAndFilterActivities: ค้นหาและกรองกิจกรรมตามเงื่อนไข
 func SearchAndFilterActivities(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var activities []models.Activity
 		query := db.Model(&models.Activity{}).Preload("SubGoals").Preload("SubCategories")
 
-		// 1. ค้นหาจากชื่อ (Search by Title)
 		if title := c.Query("title"); title != "" {
 			query = query.Where("title LIKE ?", "%"+title+"%")
 		}
 
-		// 2. กรองตามเป้าหมาย (Filter by SubGoal ID)
 		if subGoalID := c.Query("sub_goal_id"); subGoalID != "" {
 			query = query.Joins("JOIN activity_sub_goal_assoc ON activity_sub_goal_assoc.activity_id = activities.id").
 				Where("activity_sub_goal_assoc.activity_sub_goal_id = ?", subGoalID)
 		}
 
-		// 3. กรองตามหมวดหมู่ (Filter by SubCategory ID)
 		if subCatID := c.Query("sub_category_id"); subCatID != "" {
 			query = query.Joins("JOIN activity_sub_category_assoc ON activity_sub_category_assoc.activity_id = activities.id").
 				Where("activity_sub_category_assoc.activity_sub_category_id = ?", subCatID)
@@ -457,7 +447,6 @@ func SearchAndFilterActivities(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// GetActivityStats: แสดงจำนวน Fav และ Read ของแต่ละกิจกรรม
 func GetActivityStats(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
@@ -465,10 +454,8 @@ func GetActivityStats(db *gorm.DB) gin.HandlerFunc {
 		var favCount int64
 		var readTotal int64
 
-		// นับจำนวนคนที่กด Favorite
 		db.Model(&models.UserFavorite{}).Where("activity_id = ?", id).Count(&favCount)
 
-		// รวมจำนวนครั้งที่ถูกอ่านทั้งหมด (Sum ReadCount)
 		db.Model(&models.UserReadHistory{}).Where("activity_id = ?", id).Select("COALESCE(sum(read_count), 0)").Row().Scan(&readTotal)
 
 		c.JSON(http.StatusOK, gin.H{

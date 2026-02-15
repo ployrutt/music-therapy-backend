@@ -56,10 +56,10 @@ import (
 )
 
 func InitDB(cfg *config.DBConfig, models ...interface{}) (*gorm.DB, error) {
-	// ตั้งค่า Log Level ตาม Mode ของแอป
+
 	logLevel := logger.Info
 	if os.Getenv("GIN_MODE") == "release" {
-		logLevel = logger.Error // บน Production ให้โชว์เฉพาะ Error เพื่อประหยัดพื้นที่ Log
+		logLevel = logger.Error
 	}
 
 	newLogger := logger.New(
@@ -79,7 +79,6 @@ func InitDB(cfg *config.DBConfig, models ...interface{}) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// สร้างตารางอัตโนมัติ
 	err = db.AutoMigrate(models...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to auto migrate tables: %w", err)

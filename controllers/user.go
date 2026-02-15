@@ -15,12 +15,11 @@ func ListAllUsers(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var users []models.User
 
-		// 1. เพิ่ม "date_of_birth" (หรือชื่อคอลัมน์จริงใน DB) เข้าไปใน Select
 		if err := db.
 			Select("id", "firstname", "lastname", "email", "phone", "role_id", "created_at", "date_of_birth").
 			Preload("Role").
 			Find(&users).Error; err != nil {
-			// ... error handling ...
+
 		}
 
 		type UserResponse struct {
@@ -29,7 +28,7 @@ func ListAllUsers(db *gorm.DB) gin.HandlerFunc {
 			LastName    string `json:"last_name"`
 			Email       string `json:"email"`
 			PhoneNumber string `json:"phone_number"`
-			DateOfBirth string `json:"date_of_birth"` // เปลี่ยนเป็น string เพื่อ format
+			DateOfBirth string `json:"date_of_birth"`
 			RoleName    string `json:"role_name"`
 		}
 
@@ -46,7 +45,7 @@ func ListAllUsers(db *gorm.DB) gin.HandlerFunc {
 				LastName:    user.LastName,
 				Email:       user.Email,
 				PhoneNumber: user.PhoneNumber,
-				// 2. Format วันที่ให้เป็น string
+
 				DateOfBirth: user.DateOfBirth.Format("2006-01-02"),
 				RoleName:    roleName,
 			})
@@ -113,7 +112,6 @@ func GetProfile(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// AdminCreateUser - Admin เพิ่มสมาชิกใหม่เอง (เช่น เพิ่ม Staff หรือ Admin คนอื่น)
 func AdminCreateUser(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input struct {
@@ -131,10 +129,8 @@ func AdminCreateUser(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		// 1. Hash Password
 		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 
-		// 2. สร้าง Model User
 		newUser := models.User{
 			FirstName:   input.FirstName,
 			LastName:    input.LastName,
@@ -145,7 +141,6 @@ func AdminCreateUser(db *gorm.DB) gin.HandlerFunc {
 			DateOfBirth: input.DateOfBirth,
 		}
 
-		// 3. บันทึกลง DB
 		if err := db.Create(&newUser).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถเพิ่มสมาชิกได้ (Email อาจซ้ำ)"})
 			return
@@ -155,13 +150,10 @@ func AdminCreateUser(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// AdminDeleteUser - Admin ลบสมาชิก
 func AdminDeleteUser(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		id := c.Param("id")
 
-		// ใช้ Unscoped() หากต้องการลบออกจาก DB จริงๆ
-		// หรือไม่ใช้เพื่อทำ Soft Delete (ตามที่คุณตั้งค่า DeletedAt ไว้ใน Model)
 		if err := db.Delete(&models.User{}, id).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถลบสมาชิกได้"})
 			return
