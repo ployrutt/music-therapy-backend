@@ -31,7 +31,7 @@ COPY --from=builder /app/server .
 RUN mkdir -p /app/uploads
 
 # Expose port
-EXPOSE 8080
+EXPOSE 80
 
 # Environment variables (override via Dokploy)
 # ENV DB_HOST=localhost \
