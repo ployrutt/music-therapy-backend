@@ -34,11 +34,11 @@ RUN mkdir -p /app/uploads
 EXPOSE 8080
 
 # Environment variables (override via Dokploy)
-# ENV DB_HOST=localhost \
-#     DB_PORT=5432 \
-#     DB_USER=postgres \
-#     DB_PASSWORD= \
-#     DB_NAME=project-backend \
-#     GIN_MODE=release
+ENV DB_HOST=localhost \
+    DB_PORT=5432 \
+    DB_USER=postgres \
+    DB_PASSWORD= \
+    DB_NAME=project-backend \
+    GIN_MODE=release
 
 ENTRYPOINT ["./server"]
