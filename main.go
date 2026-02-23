@@ -26,11 +26,16 @@ func hashPassword(password string) (string, error) {
 
 func main() {
 
-	if err := godotenv.Load(); err != nil {
-		log.Println("Dokploy Environment detected: Using system variables")
-	}
+	// if err := godotenv.Load(); err != nil {
+	// 	log.Println("Dokploy Environment detected: Using system variables")
+	// }
+	// if err := godotenv.Load(".env.production"); err != nil {
+	// 	log.Println("Error loading .env.production file, using system variables")
+	// }
+	_ = godotenv.Load()
 
 	cfg := config.GetDBConfig()
+	log.Printf("Connecting to database: %s at %s", cfg.DBName, cfg.Host)
 
 	gormDB, err := db.InitDB(
 		cfg,
