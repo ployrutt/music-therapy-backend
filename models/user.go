@@ -43,3 +43,11 @@ type UserReadHistory struct {
 
 	Activity Activity `json:"activity" gorm:"foreignKey:ActivityID"`
 }
+type ForgotPasswordInput struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+type ResetPasswordInput struct {
+	Token       string `json:"token" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,min=8"`
+}

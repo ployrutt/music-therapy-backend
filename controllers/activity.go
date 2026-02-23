@@ -420,29 +420,78 @@ func ListReadHistory(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// func SearchAndFilterActivities(db *gorm.DB) gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		var activities []models.Activity
+// 		query := db.Model(&models.Activity{}).Preload("SubGoals").Preload("SubCategories")
+
+// 		if title := c.Query("title"); title != "" {
+// 			query = query.Where("title LIKE ?", "%"+title+"%")
+// 		}
+
+// 		if subGoalID := c.Query("sub_goal_id"); subGoalID != "" {
+// 			query = query.Joins("JOIN activity_sub_goal_assoc ON activity_sub_goal_assoc.activity_id = activities.id").
+// 				Where("activity_sub_goal_assoc.activity_sub_goal_id = ?", subGoalID)
+// 		}
+
+// 		if subCatID := c.Query("sub_category_id"); subCatID != "" {
+// 			query = query.Joins("JOIN activity_sub_category_assoc ON activity_sub_category_assoc.activity_id = activities.id").
+// 				Where("activity_sub_category_assoc.activity_sub_category_id = ?", subCatID)
+// 		}
+
+// 		if err := query.Distinct().Find(&activities).Error; err != nil {
+// 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+// 			return
+// 		}
+// 		c.JSON(http.StatusOK, activities)
+// 	}
+// }
+
 func SearchAndFilterActivities(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var activities []models.Activity
+		// เริ่มต้น Query และ Preload ข้อมูลที่เกี่ยวข้องมาแสดงผลด้วย
 		query := db.Model(&models.Activity{}).Preload("SubGoals").Preload("SubCategories")
 
+		// 1. ค้นหาจากชื่อ (Title)
 		if title := c.Query("title"); title != "" {
-			query = query.Where("title LIKE ?", "%"+title+"%")
+			query = query.Where("activities.title LIKE ?", "%"+title+"%")
 		}
 
+		// 2. ค้นหาจาก เป้าหมายย่อย (Sub Goal)
 		if subGoalID := c.Query("sub_goal_id"); subGoalID != "" {
-			query = query.Joins("JOIN activity_sub_goal_assoc ON activity_sub_goal_assoc.activity_id = activities.id").
-				Where("activity_sub_goal_assoc.activity_sub_goal_id = ?", subGoalID)
+			query = query.Joins("JOIN activity_selected_sub_goals ON activity_selected_sub_goals.activity_id = activities.id").
+				Where("activity_selected_sub_goals.activity_sub_goal_id = ?", subGoalID)
 		}
 
+		// 3. ค้นหาจาก เป้าหมายหลัก (Master Goal) [เพิ่มใหม่]
+		// ต้อง JOIN 2 ต่อ: Activity -> SubGoalAssoc -> SubGoal
+		if goalID := c.Query("goal_id"); goalID != "" {
+			query = query.Joins("JOIN activity_selected_sub_goals ON activity_selected_sub_goals.activity_id = activities.id").
+				Joins("JOIN activity_sub_goals ON activity_sub_goals.id = activity_selected_sub_goals.activity_sub_goal_id").
+				Where("activity_sub_goals.goal_id = ?", goalID)
+		}
+
+		// 4. ค้นหาจาก หมวดหมู่ย่อย (Sub Category)
 		if subCatID := c.Query("sub_category_id"); subCatID != "" {
-			query = query.Joins("JOIN activity_sub_category_assoc ON activity_sub_category_assoc.activity_id = activities.id").
-				Where("activity_sub_category_assoc.activity_sub_category_id = ?", subCatID)
+			query = query.Joins("JOIN activity_selected_sub_categories ON activity_selected_sub_categories.activity_id = activities.id").
+				Where("activity_selected_sub_categories.activity_sub_category_id = ?", subCatID)
 		}
 
-		if err := query.Distinct().Find(&activities).Error; err != nil {
+		// 5. ค้นหาจาก หมวดหมู่หลัก (Master Category) [เพิ่มใหม่]
+		// ต้อง JOIN 2 ต่อ: Activity -> SubCategoryAssoc -> SubCategory
+		if catID := c.Query("category_id"); catID != "" {
+			query = query.Joins("JOIN activity_selected_sub_categories ON activity_selected_sub_categories.activity_id = activities.id").
+				Joins("JOIN activity_sub_categories ON activity_sub_categories.id = activity_selected_sub_categories.activity_sub_category_id").
+				Where("activity_sub_categories.category_id = ?", catID)
+		}
+
+		// ใช้ .Distinct() เพื่อป้องกันข้อมูลซ้ำกรณีที่ 1 กิจกรรมมีหลาย Sub-goal ใน Master เดียวกัน
+		if err := query.Distinct("activities.*").Order("activities.id DESC").Find(&activities).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
+
 		c.JSON(http.StatusOK, activities)
 	}
 }
@@ -462,6 +511,71 @@ func GetActivityStats(db *gorm.DB) gin.HandlerFunc {
 			"activity_id":    id,
 			"favorite_count": favCount,
 			"total_reads":    readTotal,
+		})
+	}
+}
+func GetAdminDashboard(db *gorm.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// รับค่าช่วงเวลาจาก Query Params (เช่น ?start=2024-01-01&end=2024-01-31)
+		startDate := c.Query("start")
+		endDate := c.Query("end")
+
+		// สร้าง Base Query สำหรับการกรองช่วงเวลา (ถ้ามี)
+		filterRead := db.Model(&models.UserReadHistory{})
+		if startDate != "" && endDate != "" {
+			filterRead = filterRead.Where("updated_at BETWEEN ? AND ?", startDate, endDate)
+		}
+
+		// 1. กิจกรรมที่มีคนอ่านมากที่สุด (Top Read Activities)
+		var topReadActivities []struct {
+			ActivityID uint   `json:"activity_id"`
+			Title      string `json:"title"`
+			TotalRead  int    `json:"total_read"`
+		}
+		filterRead.Select("activity_id, activities.title, sum(read_count) as total_read").
+			Joins("JOIN activities ON activities.id = user_read_histories.activity_id").
+			Group("activity_id, activities.title").
+			Order("total_read DESC").Limit(10).Scan(&topReadActivities)
+
+		// 2. กิจกรรมที่มีคนกด Favorite มากที่สุด (Top Favorited Activities)
+		var topFavActivities []struct {
+			ActivityID uint   `json:"activity_id"`
+			Title      string `json:"title"`
+			FavCount   int    `json:"fav_count"`
+		}
+		db.Model(&models.UserFavorite{}).
+			Select("activity_id, activities.title, count(*) as fav_count").
+			Joins("JOIN activities ON activities.id = user_favorites.activity_id").
+			Group("activity_id, activities.title").
+			Order("fav_count DESC").Limit(10).Scan(&topFavActivities)
+
+		// 3. หมวดหมู่ย่อยและ Goals ที่มีคน Favorite มากที่สุด
+		var topFavCategories []struct {
+			SubCategoryName string `json:"name"`
+			Count           int    `json:"count"`
+		}
+		db.Table("user_favorites").
+			Select("activity_sub_categories.sub_category_name, count(*) as count").
+			Joins("JOIN activity_selected_sub_categories ON activity_selected_sub_categories.activity_id = user_favorites.activity_id").
+			Joins("JOIN activity_sub_categories ON activity_sub_categories.id = activity_selected_sub_categories.activity_sub_category_id").
+			Group("activity_sub_categories.sub_category_name").Order("count DESC").Limit(5).Scan(&topFavCategories)
+
+		// 4. หมวดหมู่และ Goals ที่มีคนอ่านมากที่สุด (ตามช่วงเวลา)
+		var topReadGoals []struct {
+			SubGoalName string `json:"name"`
+			TotalRead   int    `json:"total_read"`
+		}
+		filterRead.Table("user_read_histories").
+			Select("activity_sub_goals.sub_goal_name, sum(user_read_histories.read_count) as total_read").
+			Joins("JOIN activity_selected_sub_goals ON activity_selected_sub_goals.activity_id = user_read_histories.activity_id").
+			Joins("JOIN activity_sub_goals ON activity_sub_goals.id = activity_selected_sub_goals.activity_sub_goal_id").
+			Group("activity_sub_goals.sub_goal_name").Order("total_read DESC").Limit(5).Scan(&topReadGoals)
+
+		c.JSON(http.StatusOK, gin.H{
+			"top_read_activities": topReadActivities,
+			"top_fav_activities":  topFavActivities,
+			"top_fav_categories":  topFavCategories,
+			"top_read_goals":      topReadGoals,
 		})
 	}
 }

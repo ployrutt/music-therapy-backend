@@ -116,8 +116,10 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	apiPublic := r.Group("/api")
 	{
 		apiPublic.GET("/activities", controllers.ListActivities(db))
+
 		apiPublic.GET("/activities/:id", controllers.GetActivityByID(db))
-		apiPublic.GET("/activities/search", controllers.SearchAndFilterActivities(db))
+
+		apiPublic.GET("/activities/search", controllers.SearchAndFilterActivities(db)) //แก้แล้ว
 		apiPublic.GET("/activities/:id/stats", controllers.GetActivityStats(db))
 
 		apiPublic.GET("/master-goals", controllers.GetActivityMasterGoals(db))
@@ -137,6 +139,10 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 
 		apiPrivate.POST("/activities/:id/read", controllers.RecordReadHistory(db))
 		apiPrivate.GET("/read-history", controllers.ListReadHistory(db))
+
+		// เพิ่ม 2 บรรทัดนี้
+		auth.POST("/forgot-password", controllers.ForgotPassword(db))
+		auth.POST("/reset-password", controllers.ResetPassword(db))
 	}
 
 	admin := r.Group("/admin", middleware.AuthMiddleware("admin"))
@@ -147,8 +153,10 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 		admin.PUT("/activities/:id", controllers.UpdateActivity(db))
 		admin.DELETE("/activities/:id", controllers.DeleteActivity(db))
 
-		admin.POST("/roles", controllers.AdminCreateUser(db))
+		admin.POST("/roles", controllers.AdminCreateUser(db)) //แก้แล้ว
 		admin.DELETE("/roles/:id", controllers.AdminDeleteUser(db))
+
+		admin.GET("/dashboard/stats", controllers.GetAdminDashboard(db)) //แก้แล้ว
 	}
 
 	return r

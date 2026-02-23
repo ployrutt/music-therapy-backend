@@ -112,6 +112,44 @@ func GetProfile(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
+// func AdminCreateUser(db *gorm.DB) gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		var input struct {
+// 			FirstName   string    `json:"first_name" binding:"required"`
+// 			LastName    string    `json:"last_name" binding:"required"`
+// 			Email       string    `json:"email" binding:"required,email"`
+// 			Password    string    `json:"password" binding:"required,min=6"`
+// 			PhoneNumber string    `json:"phone_number" binding:"required"`
+// 			RoleID      uint      `json:"role_id" binding:"required"`
+// 			DateOfBirth time.Time `json:"date_of_birth"`
+// 		}
+
+// 		if err := c.ShouldBindJSON(&input); err != nil {
+// 			c.JSON(http.StatusBadRequest, gin.H{"error": "ข้อมูลไม่ถูกต้องหรือใส่ไม่ครบ"})
+// 			return
+// 		}
+
+// 		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+
+// 		newUser := models.User{
+// 			FirstName:   input.FirstName,
+// 			LastName:    input.LastName,
+// 			Email:       input.Email,
+// 			Password:    string(hashedPassword),
+// 			PhoneNumber: input.PhoneNumber,
+// 			RoleID:      input.RoleID,
+// 			DateOfBirth: input.DateOfBirth,
+// 		}
+
+// 		if err := db.Create(&newUser).Error; err != nil {
+// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "ไม่สามารถเพิ่มสมาชิกได้ (Email อาจซ้ำ)"})
+// 			return
+// 		}
+
+// 		c.JSON(http.StatusCreated, gin.H{"message": "เพิ่มสมาชิกสำเร็จ", "user_id": newUser.ID})
+// 	}
+// }
+
 func AdminCreateUser(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var input struct {
@@ -120,12 +158,19 @@ func AdminCreateUser(db *gorm.DB) gin.HandlerFunc {
 			Email       string    `json:"email" binding:"required,email"`
 			Password    string    `json:"password" binding:"required,min=6"`
 			PhoneNumber string    `json:"phone_number" binding:"required"`
-			RoleID      uint      `json:"role_id" binding:"required"`
+			RoleID      uint      `json:"role_id" binding:"required"` // รับ ID ของ Role (1=Admin, 2=Member เป็นต้น)
 			DateOfBirth time.Time `json:"date_of_birth"`
 		}
 
 		if err := c.ShouldBindJSON(&input); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "ข้อมูลไม่ถูกต้องหรือใส่ไม่ครบ"})
+			return
+		}
+
+		// --- จุดที่เพิ่มใหม่: ตรวจสอบว่า RoleID นี้มีอยู่จริงในตาราง roles ---
+		var role models.Role
+		if err := db.First(&role, input.RoleID).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "ไม่พบสิทธิ์การใช้งาน (Role) ที่ระบุ"})
 			return
 		}
 
@@ -146,7 +191,13 @@ func AdminCreateUser(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, gin.H{"message": "เพิ่มสมาชิกสำเร็จ", "user_id": newUser.ID})
+		c.JSON(http.StatusCreated, gin.H{
+			"message": "เพิ่มสมาชิกสำเร็จ",
+			"user": gin.H{
+				"id":        newUser.ID,
+				"role_name": role.RoleName,
+			},
+		})
 	}
 }
 
