@@ -111,6 +111,9 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 	{
 		auth.POST("/register", controllers.Register(db))
 		auth.POST("/login", controllers.Login(db))
+
+		auth.POST("/forgot-password", controllers.ForgotPassword(db))
+		auth.POST("/reset-password", controllers.ResetPassword(db))
 	}
 
 	apiPublic := r.Group("/api")
@@ -140,9 +143,6 @@ func SetupRouter(db *gorm.DB) *gin.Engine {
 		apiPrivate.POST("/activities/:id/read", controllers.RecordReadHistory(db))
 		apiPrivate.GET("/read-history", controllers.ListReadHistory(db))
 
-		// เพิ่ม 2 บรรทัดนี้
-		auth.POST("/forgot-password", controllers.ForgotPassword(db))
-		auth.POST("/reset-password", controllers.ResetPassword(db))
 	}
 
 	admin := r.Group("/admin", middleware.AuthMiddleware("admin"))
