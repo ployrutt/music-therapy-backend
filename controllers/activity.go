@@ -514,6 +514,7 @@ func GetActivityStats(db *gorm.DB) gin.HandlerFunc {
 		})
 	}
 }
+
 func GetAdminDashboard(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// รับค่าช่วงเวลาจาก Query Params (เช่น ?start=2024-01-01&end=2024-01-31)
